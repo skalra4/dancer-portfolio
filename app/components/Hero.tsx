@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { siteConfig } from "@/config/siteConfig";
+import { fetchSiteSettings } from "@/sanity/lib/fetch";
 
-export function Hero() {
-  const { hero } = siteConfig;
+export async function Hero() {
+  const { hero } = await fetchSiteSettings();
 
   return (
     <section

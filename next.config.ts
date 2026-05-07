@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
         hostname: "i.ytimg.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "i.vimeocdn.com",
+        pathname: "/**",
+      },
+      {
+        // Sanity image CDN — used when assets are uploaded to a Sanity project
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+      },
     ],
   },
 };

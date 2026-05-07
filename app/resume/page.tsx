@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Download } from "lucide-react";
-import { Navbar } from "../components/Navbar";
-import { ResumePrintButton } from "../components/ResumePrintButton";
+import { NavbarWrapper } from "../components/NavbarWrapper";
 import { ResumeWebView } from "../components/ResumeWebView";
 import { ResumeViewToggle } from "../components/ResumeViewToggle";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { siteConfig } from "@/config/siteConfig";
-import { resumeData } from "@/data/resume";
+import { fetchResumeHeader, fetchSiteSettings } from "@/sanity/lib/fetch";
 
 export const metadata: Metadata = {
   title: "Resume",
   description: "Education, performance experience, and awards.",
 };
 
-function ContactLine() {
-  const { contact } = resumeData;
+function ContactLine({
+  contact,
+}: {
+  contact: { email?: string; phone?: string | null; location?: string | null; website?: string | null };
+}) {
   const parts: string[] = [];
   if (contact.location) parts.push(contact.location);
   if (contact.email) parts.push(contact.email);
@@ -29,13 +31,17 @@ function ContactLine() {
   );
 }
 
-export default function ResumePage() {
+export default async function ResumePage() {
   const { resumePdfPath } = siteConfig;
+  const [{ headline, contact }, { siteName }] = await Promise.all([
+    fetchResumeHeader(),
+    fetchSiteSettings(),
+  ]);
 
   return (
     <>
       <div className="print:hidden">
-        <Navbar />
+        <NavbarWrapper />
       </div>
 
       <main className="min-h-screen bg-zinc-50 pb-24 pt-24 dark:bg-zinc-950 print:bg-white print:pb-0 print:pt-0">
@@ -58,17 +64,18 @@ export default function ResumePage() {
               <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h1 className="font-[family-name:var(--font-display)] text-5xl font-medium tracking-tight text-zinc-900 dark:text-zinc-50 print:text-3xl print:text-black">
-                    {siteConfig.siteName}
+                    {siteName}
                   </h1>
-                  <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 print:text-zinc-600">
-                    {resumeData.headline}
-                  </p>
-                  <ContactLine />
+                  {headline ? (
+                    <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 print:text-zinc-600">
+                      {headline}
+                    </p>
+                  ) : null}
+                  <ContactLine contact={contact} />
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex shrink-0 items-center gap-3 print:hidden">
-                  <ResumePrintButton />
+                <div className="flex shrink-0 items-center print:hidden">
                   <a
                     href={resumePdfPath}
                     download

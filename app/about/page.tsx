@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Navbar } from "../components/Navbar";
+import { NavbarWrapper } from "../components/NavbarWrapper";
 import { ScrollReveal } from "../components/ScrollReveal";
-import { siteConfig } from "@/config/siteConfig";
+import { fetchSiteSettings } from "@/sanity/lib/fetch";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: siteConfig.seoDescription,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { seoDescription } = await fetchSiteSettings();
+  return { title: "About", description: seoDescription };
+}
 
 function BioParagraphs({ text }: { text: string }) {
   const blocks = text
@@ -25,10 +25,12 @@ function BioParagraphs({ text }: { text: string }) {
   );
 }
 
-function SocialLinks() {
-  const entries = Object.entries(siteConfig.social).filter(
-    ([, url]) => url && url.length > 0,
-  ) as [string, string][];
+type SocialEntry = [string, string];
+
+function SocialLinks({ social }: { social: Record<string, string | undefined> }) {
+  const entries = Object.entries(social).filter(
+    (entry): entry is SocialEntry => typeof entry[1] === "string" && entry[1].length > 0,
+  );
 
   if (entries.length === 0) return null;
 
@@ -59,10 +61,13 @@ function SocialLinks() {
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { siteName, siteTagline, bio, social } = await fetchSiteSettings();
+  const hasSocial = Object.values(social).some(Boolean);
+
   return (
     <>
-      <Navbar />
+      <NavbarWrapper />
       <main className="flex flex-1 flex-col bg-zinc-50 pb-24 pt-24 dark:bg-zinc-950">
         <div className="mx-auto max-w-2xl px-6 py-16 sm:px-8">
           <ScrollReveal>
@@ -71,21 +76,21 @@ export default function AboutPage() {
                 About
               </p>
               <h1 className="mt-4 text-center font-[family-name:var(--font-display)] text-4xl text-zinc-900 dark:text-zinc-50 sm:text-5xl">
-                {siteConfig.siteName}
+                {siteName}
               </h1>
               <p className="mt-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                {siteConfig.siteTagline}
+                {siteTagline}
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={0.1} className="mt-14">
-            <BioParagraphs text={siteConfig.bio} />
+            <BioParagraphs text={bio} />
           </ScrollReveal>
 
-          {Object.values(siteConfig.social).some(Boolean) ? (
+          {hasSocial ? (
             <ScrollReveal delay={0.18}>
-              <SocialLinks />
+              <SocialLinks social={social} />
             </ScrollReveal>
           ) : null}
 

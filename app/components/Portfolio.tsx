@@ -1,80 +1,132 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type Transition } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import Image from "next/image";
 import {
-  PORTFOLIO_CATEGORIES,
-  siteConfig,
-  type PortfolioCategory,
+  type MediaImage,
+  type MediaVideo,
   type PortfolioItem,
-} from "@/config/siteConfig";
+} from "@/data/content";
+import { MediaCard } from "./MediaCard";
 import { ScrollReveal } from "./ScrollReveal";
 
-export type { PortfolioCategory };
-
-const ALL_FILTERS: Array<PortfolioCategory | "all"> = ["all", ...PORTFOLIO_CATEGORIES];
+// ── Type helpers ────────────────────────────────────────────────────────────
+type ImageItem = PortfolioItem & { media: MediaImage };
+type VideoItem = PortfolioItem & { media: MediaVideo };
 
 /**
- * Aspect ratios cycle for masonry "All" view.
- * These must be literal strings for Tailwind to include them in the build.
+ * Column-span classes.  Grid container = `grid-cols-2 md:grid-cols-6`.
+ *   colSpan 1 → col-span-1 md:col-span-2  (1/3 desktop, 1/2 mobile)
+ *   colSpan 2 → col-span-2 md:col-span-3  (½ desktop, full mobile)
+ *   colSpan 3 → col-span-2 md:col-span-6  (full desktop + mobile)
  */
-const MASONRY_RATIOS = [
-  "3/4", "4/3", "1/1", "2/3", "4/3",
-  "1/1", "3/4", "16/9", "4/3", "2/3",
-];
+const COL_SPAN: Record<1 | 2 | 3, string> = {
+  1: "col-span-1 md:col-span-2",
+  2: "col-span-2 md:col-span-3",
+  3: "col-span-2 md:col-span-6",
+};
 
-type PortfolioProps = { standalone?: boolean };
+/** Cycling aspect ratios for image items in the masonry "All" view. */
+const MASONRY_IMG_RATIOS = ["3/4", "4/3", "1/1", "2/3", "4/3", "1/1", "3/4", "16/9", "4/3", "2/3"];
 
-export function Portfolio({ standalone = false }: PortfolioProps) {
-  const { portfolio: projects, portfolioSection } = siteConfig;
-  const [active, setActive] = useState<PortfolioCategory | "all">("all");
-  const [lightboxItem, setLightboxItem] = useState<PortfolioItem | null>(null);
+/** Determine the CSS aspect-ratio for a card in the masonry collage view. */
+function getMasonryAspect(item: PortfolioItem, index: number): string {
+  if (item.media.type === "video") return "16/9";
+  if (item.media.type === "social")
+    return item.media.provider === "tiktok" ? "9/16" : "1/1";
+  return MASONRY_IMG_RATIOS[index % MASONRY_IMG_RATIOS.length]!;
+}
+
+/** Determine the CSS aspect-ratio for a card in the filtered tile grid view. */
+function getTileAspect(item: PortfolioItem): string {
+  if (item.media.type === "video") return "16/9";
+  if (item.media.type === "social")
+    return item.media.provider === "tiktok" ? "9/16" : "1/1";
+  const cs = item.colSpan ?? 1;
+  if (cs === 3) return "3/1";
+  if (cs === 2) return "16/9";
+  return "1/1";
+}
+
+// ── Portfolio component ──────────────────────────────────────────────────────
+
+/**
+ * Props are supplied by the parent Server Component (app/portfolio/page.tsx)
+ * which fetches the data from Sanity or the JSON fallback via
+ * `fetchPortfolioContent()` in sanity/lib/fetch.ts.
+ */
+type PortfolioProps = {
+  standalone?: boolean;
+  items: PortfolioItem[];
+  categories: string[];
+  section: { title: string; description: string };
+};
+
+export function Portfolio({
+  standalone = false,
+  items,
+  categories,
+  section,
+}: PortfolioProps) {
   const reduceMotion = useReducedMotion();
 
+  const allFilters = useMemo(() => ["all", ...categories], [categories]);
+
+  const [active, setActive] = useState<string>("all");
+  const [lightboxItem, setLightboxItem] = useState<ImageItem | null>(null);
+  const [videoModal, setVideoModal] = useState<VideoItem | null>(null);
+
+  // All items matching the active filter
   const visible = useMemo(
-    () => (active === "all" ? projects : projects.filter((p) => p.category === active)),
-    [active, projects],
+    () => (active === "all" ? items : items.filter((p) => p.category === active)),
+    [active, items],
+  );
+
+  // Image-only subset for lightbox navigation
+  const imageItems = useMemo(
+    () => visible.filter((p): p is ImageItem => p.media.type === "image"),
+    [visible],
   );
 
   const lightboxIndex = useMemo(
-    () => (lightboxItem ? visible.findIndex((p) => p.id === lightboxItem.id) : -1),
-    [lightboxItem, visible],
+    () => (lightboxItem ? imageItems.findIndex((p) => p.id === lightboxItem.id) : -1),
+    [lightboxItem, imageItems],
   );
 
   const goNext = useCallback(() => {
-    if (lightboxIndex >= 0 && lightboxIndex < visible.length - 1)
-      setLightboxItem(visible[lightboxIndex + 1]!);
-  }, [lightboxIndex, visible]);
+    if (lightboxIndex >= 0 && lightboxIndex < imageItems.length - 1)
+      setLightboxItem(imageItems[lightboxIndex + 1]!);
+  }, [lightboxIndex, imageItems]);
 
   const goPrev = useCallback(() => {
-    if (lightboxIndex > 0) setLightboxItem(visible[lightboxIndex - 1]!);
-  }, [lightboxIndex, visible]);
+    if (lightboxIndex > 0) setLightboxItem(imageItems[lightboxIndex - 1]!);
+  }, [lightboxIndex, imageItems]);
 
+  // Keyboard handlers
   useEffect(() => {
-    if (!lightboxItem) return;
+    if (!lightboxItem && !videoModal) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightboxItem(null);
-      else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "Escape") {
+        setLightboxItem(null);
+        setVideoModal(null);
+      } else if (lightboxItem) {
+        if (e.key === "ArrowRight") goNext();
+        else if (e.key === "ArrowLeft") goPrev();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [lightboxItem, goNext, goPrev]);
+  }, [lightboxItem, videoModal, goNext, goPrev]);
 
+  // Body scroll lock
   useEffect(() => {
-    document.body.style.overflow = lightboxItem ? "hidden" : "";
+    document.body.style.overflow = lightboxItem || videoModal ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [lightboxItem]);
+  }, [lightboxItem, videoModal]);
 
   const isMasonry = active === "all";
-
-  const cardTransition: Transition = {
-    type: "spring",
-    bounce: 0.05,
-    duration: reduceMotion ? 0 : 0.55,
-  };
 
   const stagger = (i: number): Transition => ({
     duration: reduceMotion ? 0 : 0.4,
@@ -94,10 +146,10 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
         <ScrollReveal>
           <div className="text-center">
             <h2 className="font-[family-name:var(--font-display)] text-3xl text-zinc-900 sm:text-4xl dark:text-zinc-100">
-              {portfolioSection.title}
+              {section.title}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">
-              {portfolioSection.description}
+              {section.description}
             </p>
           </div>
         </ScrollReveal>
@@ -109,7 +161,7 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
             role="group"
             aria-label="Filter by category"
           >
-            {ALL_FILTERS.map((key) => {
+            {allFilters.map((key) => {
               const isActive = active === key;
               return (
                 <button
@@ -129,10 +181,9 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
             })}
           </div>
 
-          {/* Layout hint */}
           <AnimatePresence mode="wait">
             <motion.p
-              key={isMasonry ? "masonry-hint" : "grid-hint"}
+              key={isMasonry ? "m" : "g"}
               className="mt-3 text-center text-xs text-zinc-400 dark:text-zinc-600"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -140,16 +191,16 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
               transition={{ duration: 0.2 }}
             >
               {isMasonry
-                ? "Collage view · select a category for a uniform grid"
-                : "Click any image to expand"}
+                ? "Collage view · select a category for a grid view"
+                : "Click an image to expand · click a video to play"}
             </motion.p>
           </AnimatePresence>
         </ScrollReveal>
 
-        {/* ── Grid / Masonry ── */}
+        {/* ── Layouts ── */}
         <AnimatePresence mode="wait">
           {isMasonry ? (
-            /* ─── MASONRY: CSS columns, varying aspect ratios ─── */
+            /* ── MASONRY: CSS columns, media-aware aspect ratios ── */
             <motion.div
               key="masonry"
               className="mt-10 columns-2 gap-3 md:columns-3"
@@ -166,41 +217,63 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={stagger(i)}
                 >
-                  <PortfolioCard
-                    project={project}
-                    aspectRatio={MASONRY_RATIOS[i % MASONRY_RATIOS.length]!}
-                    cardTransition={cardTransition}
-                    onClick={() => setLightboxItem(project)}
+                  <MediaCard
+                    item={project}
+                    aspectRatio={getMasonryAspect(project, i)}
+                    layoutId={project.media.type === "image" ? `img-${project.id}` : undefined}
+                    onImageClick={
+                      project.media.type === "image"
+                        ? () => setLightboxItem(project as ImageItem)
+                        : undefined
+                    }
+                    onVideoClick={
+                      project.media.type === "video"
+                        ? () => setVideoModal(project as VideoItem)
+                        : undefined
+                    }
                   />
                 </motion.div>
               ))}
             </motion.div>
           ) : (
-            /* ─── TILE GRID: uniform squares ─── */
+            /* ── ARTISTIC TILE GRID: 6-col base, varying colSpan ── */
             <motion.ul
               key={`grid-${active}`}
-              className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-3"
+              className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-6"
               role="list"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {visible.map((project, i) => (
-                <motion.li
-                  key={project.id}
-                  initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={stagger(i)}
-                >
-                  <PortfolioCard
-                    project={project}
-                    aspectRatio="1/1"
-                    cardTransition={cardTransition}
-                    onClick={() => setLightboxItem(project)}
-                  />
-                </motion.li>
-              ))}
+              {visible.map((project, i) => {
+                const cs = (project.colSpan ?? 1) as 1 | 2 | 3;
+                return (
+                  <motion.li
+                    key={project.id}
+                    className={COL_SPAN[cs]}
+                    initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={stagger(i)}
+                  >
+                    <MediaCard
+                      item={project}
+                      aspectRatio={getTileAspect(project)}
+                      layoutId={project.media.type === "image" ? `img-${project.id}` : undefined}
+                      onImageClick={
+                        project.media.type === "image"
+                          ? () => setLightboxItem(project as ImageItem)
+                          : undefined
+                      }
+                      onVideoClick={
+                        project.media.type === "video"
+                          ? () => setVideoModal(project as VideoItem)
+                          : undefined
+                      }
+                    />
+                  </motion.li>
+                );
+              })}
             </motion.ul>
           )}
         </AnimatePresence>
@@ -212,75 +285,28 @@ export function Portfolio({ standalone = false }: PortfolioProps) {
         )}
       </div>
 
-      {/* ── Lightbox ── */}
-      <Lightbox
+      {/* ── Image lightbox ── */}
+      <ImageLightbox
         item={lightboxItem}
         index={lightboxIndex}
-        total={visible.length}
+        total={imageItems.length}
         onClose={() => setLightboxItem(null)}
         onPrev={goPrev}
         onNext={goNext}
       />
+
+      {/* ── Video modal ── */}
+      <VideoModal item={videoModal} onClose={() => setVideoModal(null)} />
     </section>
   );
 }
 
-/* ─────────────────────────────────────
-   PortfolioCard
-───────────────────────────────────── */
-function PortfolioCard({
-  project,
-  aspectRatio,
-  cardTransition,
-  onClick,
-}: {
-  project: PortfolioItem;
-  aspectRatio: string;
-  cardTransition: Transition;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
-      aria-label={`View ${project.title}`}
-    >
-      {/* Image — shared layout element for lightbox transition */}
-      <motion.div
-        layoutId={`img-${project.id}`}
-        className="relative w-full overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-700"
-        style={{ aspectRatio }}
-        transition={cardTransition}
-      >
-        <Image
-          src={project.imageUrl}
-          alt={`${project.title} — ${project.category}`}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          sizes="(max-width: 768px) 50vw, 33vw"
-        />
-        {/* Subtle dark vignette on hover */}
-        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/15" />
-      </motion.div>
-
-      {/* Caption */}
-      <div className="mt-2 px-0.5">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-          {project.category}
-        </span>
-        <p className="mt-0.5 text-sm font-medium text-zinc-800 transition-colors group-hover:text-zinc-500 dark:text-zinc-200 dark:group-hover:text-zinc-400">
-          {project.title}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-/* ─────────────────────────────────────
-   Lightbox
-───────────────────────────────────── */
-function Lightbox({
+/* ─────────────────────────────────────────────────────────────
+   Image lightbox
+   Shared-layout animation: the `layoutId` links the thumbnail
+   in the grid to the full-screen image here via Framer Motion.
+───────────────────────────────────────────────────────────── */
+function ImageLightbox({
   item,
   index,
   total,
@@ -288,7 +314,7 @@ function Lightbox({
   onPrev,
   onNext,
 }: {
-  item: PortfolioItem | null;
+  item: ImageItem | null;
   index: number;
   total: number;
   onClose: () => void;
@@ -296,12 +322,7 @@ function Lightbox({
   onNext: () => void;
 }) {
   const reduceMotion = useReducedMotion();
-
-  const spring: Transition = {
-    type: "spring",
-    bounce: 0.05,
-    duration: reduceMotion ? 0 : 0.55,
-  };
+  const spring: Transition = { type: "spring", bounce: 0.05, duration: reduceMotion ? 0 : 0.55 };
 
   return (
     <AnimatePresence>
@@ -320,23 +341,20 @@ function Lightbox({
             aria-hidden
           />
 
-          {/* ── Shared-layout image: flies from the card ── */}
+          {/* Shared-layout image — flies from card position */}
           <AnimatePresence mode="popLayout">
             <motion.div
               key={item.id}
               layoutId={`img-${item.id}`}
               className="relative z-10 overflow-hidden rounded-xl shadow-2xl"
-              style={{
-                width: "min(88vw, 960px)",
-                height: "min(78vh, 680px)",
-              }}
+              style={{ width: "min(88vw, 960px)", height: "min(78vh, 680px)" }}
               transition={spring}
             >
               <Image
                 src={
-                  item.imageUrl.includes("images.unsplash.com")
-                    ? item.imageUrl.replace(/w=\d+/, "w=2400")
-                    : item.imageUrl
+                  item.media.imageUrl.includes("images.unsplash.com")
+                    ? item.media.imageUrl.replace(/w=\d+/, "w=2400")
+                    : item.media.imageUrl
                 }
                 alt={item.title}
                 fill
@@ -368,18 +386,15 @@ function Lightbox({
             )}
           </motion.div>
 
-          {/* ── Controls ── */}
-          {/* Close */}
+          {/* Controls */}
           <button
             type="button"
             onClick={onClose}
             className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-            aria-label="Close lightbox"
+            aria-label="Close"
           >
             <X className="size-5" />
           </button>
-
-          {/* Prev */}
           {index > 0 && (
             <button
               type="button"
@@ -390,8 +405,6 @@ function Lightbox({
               <ChevronLeft className="size-6" />
             </button>
           )}
-
-          {/* Next */}
           {index < total - 1 && (
             <button
               type="button"
@@ -402,6 +415,86 @@ function Lightbox({
               <ChevronRight className="size-6" />
             </button>
           )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Video modal
+   Simple fade + scale — no shared layout animation needed
+   since there is no thumbnail in the lightbox.
+───────────────────────────────────────────────────────────── */
+function VideoModal({
+  item,
+  onClose,
+}: {
+  item: VideoItem | null;
+  onClose: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {item && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.22 }}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/92 backdrop-blur-sm"
+            onClick={onClose}
+            aria-hidden
+          />
+
+          {/* Embed container */}
+          <motion.div
+            className="relative z-10 w-full max-w-[960px]"
+            initial={{ scale: reduceMotion ? 1 : 0.94, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: reduceMotion ? 1 : 0.94, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.05, duration: reduceMotion ? 0 : 0.45 }}
+          >
+            <div className="aspect-video overflow-hidden rounded-xl shadow-2xl">
+              <iframe
+                src={
+                  item.media.provider === "youtube"
+                    ? `https://www.youtube-nocookie.com/embed/${item.media.videoId}?autoplay=1&rel=0`
+                    : `https://player.vimeo.com/video/${item.media.videoId}?autoplay=1`
+                }
+                title={item.title}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+
+            {/* Caption */}
+            <div className="mt-4 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/50">
+                {item.category} · {item.media.provider}
+              </p>
+              <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-medium text-white">
+                {item.title}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Close */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            aria-label="Close video"
+          >
+            <X className="size-5" />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

@@ -1,10 +1,10 @@
-import { Navbar } from "./components/Navbar";
+import { NavbarWrapper } from "./components/NavbarWrapper";
 import { Hero } from "./components/Hero";
 
 export default function Home() {
   return (
     <>
-      <Navbar />
+      <NavbarWrapper />
       <main className="flex flex-1 flex-col">
         <Hero />
       </main>

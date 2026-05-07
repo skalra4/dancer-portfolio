@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Navbar } from "../components/Navbar";
+import { NavbarWrapper } from "../components/NavbarWrapper";
 import { Portfolio } from "../components/Portfolio";
-import { siteConfig } from "@/config/siteConfig";
+import { fetchPortfolioContent } from "@/sanity/lib/fetch";
 
-export const metadata: Metadata = {
-  title: "Portfolio",
-  description: siteConfig.portfolioSection.description,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { section } = await fetchPortfolioContent();
+  return { title: "Portfolio", description: section.description };
+}
 
-export default function PortfolioPage() {
+export default async function PortfolioPage() {
+  const { items, categories, section } = await fetchPortfolioContent();
+
   return (
     <>
-      <Navbar />
+      <NavbarWrapper />
       <main className="flex min-h-screen flex-1 flex-col pt-16">
-        <Portfolio standalone />
+        <Portfolio standalone items={items} categories={categories} section={section} />
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
-import { siteConfig } from "@/config/siteConfig";
+import { fetchSiteSettings } from "@/sanity/lib/fetch";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,13 +20,32 @@ const display = Cormorant_Garamond({
   weight: ["400", "500", "600"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: `${siteConfig.siteName} · ${siteConfig.siteTagline}`,
-    template: `%s · ${siteConfig.siteName}`,
-  },
-  description: siteConfig.seoDescription,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName, siteTagline, seoDescription } = await fetchSiteSettings();
+  const siteUrl = getSiteUrl();
+  const title = `${siteName} · ${siteTagline}`;
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: title,
+      template: `%s · ${siteName}`,
+    },
+    description: seoDescription,
+    openGraph: {
+      type: "website",
+      siteName,
+      title,
+      description: seoDescription,
+      url: siteUrl,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: seoDescription,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

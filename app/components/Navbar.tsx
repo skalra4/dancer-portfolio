@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { siteConfig } from "@/config/siteConfig";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -20,7 +19,12 @@ function isExternalOrPublicAsset(src: string) {
   return src.startsWith("http") || src.startsWith("/");
 }
 
-export function Navbar() {
+type NavbarProps = {
+  siteName?: string;
+  menuTriggerImageUrl?: string | null;
+};
+
+export function Navbar({ siteName = "Zamora", menuTriggerImageUrl }: NavbarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,7 +50,7 @@ export function Navbar() {
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [open, close]);
 
-  const triggerSrc = siteConfig.menuTriggerImageUrl?.trim();
+  const triggerSrc = menuTriggerImageUrl?.trim();
   const useSilhouette =
     triggerSrc && triggerSrc.length > 0 && isExternalOrPublicAsset(triggerSrc);
 
@@ -58,7 +62,7 @@ export function Navbar() {
           className="font-[family-name:var(--font-display)] text-lg tracking-[0.2em] text-white uppercase"
           onClick={close}
         >
-          {siteConfig.siteName}
+          {siteName}
         </Link>
 
         <div className="relative" ref={containerRef}>
