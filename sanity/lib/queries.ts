@@ -28,7 +28,15 @@ export const SITE_SETTINGS_QUERY = defineQuery(`
     contactTitle,
     contactDescription,
     contactEmail,
-    contactPhone
+    contactPhone,
+    "aboutImageUrl": aboutImage.asset->url,
+    "aboutImageAlt": aboutImage.alt,
+    "aboutImageWidth": aboutImage.asset->metadata.dimensions.width,
+    "aboutImageHeight": aboutImage.asset->metadata.dimensions.height,
+    "contactImageUrl": contactImage.asset->url,
+    "contactImageAlt": contactImage.alt,
+    "contactImageWidth": contactImage.asset->metadata.dimensions.width,
+    "contactImageHeight": contactImage.asset->metadata.dimensions.height
   }
 `);
 

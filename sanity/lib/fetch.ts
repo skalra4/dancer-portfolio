@@ -154,6 +154,13 @@ export async function fetchResumeSections(): Promise<ResumeSection[]> {
 
 // ── Site settings ────────────────────────────────────────────────────────────
 
+export type CmsImage = {
+  url: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 export type SiteSettings = {
   siteName: string;
   siteTagline: string;
@@ -176,10 +183,16 @@ export type SiteSettings = {
     facebook?: string;
     linkedin?: string;
   };
+  about: {
+    image: CmsImage;
+  };
   contactTitle: string;
   contactDescription: string;
   contactEmail: string;
   contactPhone: string;
+  contact: {
+    image: CmsImage;
+  };
 };
 
 /** Hard-coded defaults — used when Sanity is not configured or returns nothing. */
@@ -206,10 +219,16 @@ Based in New York, available for performance, rehearsal direction, and guest tea
     instagram: "https://instagram.com",
     youtube: "https://youtube.com",
   },
+  about: {
+    image: { url: "", alt: "", width: 0, height: 0 },
+  },
   contactTitle: "Contact",
   contactDescription: "Booking and inquiries — reach out via email or the form below.",
   contactEmail: "",
   contactPhone: "",
+  contact: {
+    image: { url: "", alt: "", width: 0, height: 0 },
+  },
 };
 
 type RawSiteSettings = {
@@ -234,6 +253,14 @@ type RawSiteSettings = {
   contactDescription?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+  aboutImageUrl?: string | null;
+  aboutImageAlt?: string | null;
+  aboutImageWidth?: number | null;
+  aboutImageHeight?: number | null;
+  contactImageUrl?: string | null;
+  contactImageAlt?: string | null;
+  contactImageWidth?: number | null;
+  contactImageHeight?: number | null;
 };
 
 function normaliseSiteSettings(raw: RawSiteSettings | null): SiteSettings {
@@ -261,10 +288,26 @@ function normaliseSiteSettings(raw: RawSiteSettings | null): SiteSettings {
       facebook: raw.socialFacebook?.trim() || undefined,
       linkedin: raw.socialLinkedin?.trim() || undefined,
     },
+    about: {
+      image: {
+        url: raw.aboutImageUrl?.trim() || "",
+        alt: raw.aboutImageAlt?.trim() || "",
+        width: raw.aboutImageWidth ?? 0,
+        height: raw.aboutImageHeight ?? 0,
+      },
+    },
     contactTitle: raw.contactTitle?.trim() || fb.contactTitle,
     contactDescription: raw.contactDescription?.trim() || fb.contactDescription,
     contactEmail: raw.contactEmail?.trim() || fb.contactEmail,
     contactPhone: raw.contactPhone?.trim() || fb.contactPhone,
+    contact: {
+      image: {
+        url: raw.contactImageUrl?.trim() || "",
+        alt: raw.contactImageAlt?.trim() || "",
+        width: raw.contactImageWidth ?? 0,
+        height: raw.contactImageHeight ?? 0,
+      },
+    },
   };
 }
 

@@ -121,6 +121,24 @@ export const siteSettingsType = defineType({
       type: "url",
     }),
 
+    // ── About page image ────────────────────────────────────────────────────
+    defineField({
+      name: "aboutImage",
+      title: "About Page Header Image",
+      type: "image",
+      options: { hotspot: true },
+      description:
+        "Optional photo shown at the top of the About page. Leave empty to show just the text header.",
+      fields: [
+        defineField({
+          name: "alt",
+          title: "Alt text",
+          type: "string",
+          description: "Describe the image for screen readers.",
+        }),
+      ],
+    }),
+
     // ── Contact page ────────────────────────────────────────────────────────
     defineField({
       name: "contactTitle",
@@ -145,6 +163,22 @@ export const siteSettingsType = defineType({
       title: "Contact Phone Number",
       type: "string",
       description: "Optional phone number displayed on the Contact page (e.g. +1 555 000 0000).",
+    }),
+    defineField({
+      name: "contactImage",
+      title: "Contact Page Image",
+      type: "image",
+      options: { hotspot: true },
+      description:
+        "Optional photo shown beside the contact form on desktop. Leave empty for a single-column form layout.",
+      fields: [
+        defineField({
+          name: "alt",
+          title: "Alt text",
+          type: "string",
+          description: "Describe the image for screen readers.",
+        }),
+      ],
     }),
   ],
 
