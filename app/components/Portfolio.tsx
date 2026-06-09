@@ -9,6 +9,7 @@ import {
   type MediaVideo,
   type PortfolioItem,
 } from "@/data/content";
+import { displayCategory } from "@/lib/displayCategory";
 import { MediaCard } from "./MediaCard";
 import { ScrollReveal } from "./ScrollReveal";
 
@@ -28,35 +29,36 @@ const COL_SPAN: Record<1 | 2 | 3, string> = {
   3: "col-span-2 md:col-span-6",
 };
 
-/** Cycling aspect ratios for image items in the masonry "All" view. */
-const MASONRY_IMG_RATIOS = ["3/4", "4/3", "1/1", "2/3", "4/3", "1/1", "3/4", "16/9", "4/3", "2/3"];
+const FALLBACK_ASPECT = "4 / 3";
+
+/** Use real image dimensions when available; fallback for JSON / missing metadata. */
+function getImageAspect(item: PortfolioItem): string {
+  if (item.media.type !== "image") return FALLBACK_ASPECT;
+  const { width, height } = item.media;
+  if (width && height && width > 0 && height > 0) return `${width} / ${height}`;
+  return FALLBACK_ASPECT;
+}
 
 /** Determine the CSS aspect-ratio for a card in the masonry collage view. */
-function getMasonryAspect(item: PortfolioItem, index: number): string {
-  if (item.media.type === "video") return "16/9";
+function getMasonryAspect(item: PortfolioItem): string {
+  if (item.media.type === "video") return "16 / 9";
   if (item.media.type === "social")
-    return item.media.provider === "tiktok" ? "9/16" : "1/1";
-  return MASONRY_IMG_RATIOS[index % MASONRY_IMG_RATIOS.length]!;
+    return item.media.provider === "tiktok" ? "9 / 16" : "1 / 1";
+  return getImageAspect(item);
 }
 
 /** Determine the CSS aspect-ratio for a card in the filtered tile grid view. */
 function getTileAspect(item: PortfolioItem): string {
-  if (item.media.type === "video") return "16/9";
+  if (item.media.type === "video") return "16 / 9";
   if (item.media.type === "social")
-    return item.media.provider === "tiktok" ? "9/16" : "1/1";
-  const cs = item.colSpan ?? 1;
-  if (cs === 3) return "3/1";
-  if (cs === 2) return "16/9";
-  return "1/1";
+    return item.media.provider === "tiktok" ? "9 / 16" : "1 / 1";
+  return getImageAspect(item);
 }
 
-/** Display-name overrides — maps stored category values to UI labels. */
-const CATEGORY_LABELS: Record<string, string> = {
-  Headshots: "Visual Portfolio",
-};
-
-function categoryLabel(key: string): string {
-  return CATEGORY_LABELS[key] ?? key;
+function getImageDimensions(item: ImageItem): { w: number; h: number } {
+  const { width, height } = item.media;
+  if (width && height && width > 0 && height > 0) return { w: width, h: height };
+  return { w: 4, h: 3 };
 }
 
 // ── Portfolio component ──────────────────────────────────────────────────────
@@ -184,7 +186,7 @@ export function Portfolio({
                       : "border-zinc-300 bg-transparent text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  {key === "all" ? "All" : categoryLabel(key)}
+                  {key === "all" ? "All" : displayCategory(key)}
                 </button>
               );
             })}
@@ -228,7 +230,7 @@ export function Portfolio({
                 >
                   <MediaCard
                     item={project}
-                    aspectRatio={getMasonryAspect(project, i)}
+                    aspectRatio={getMasonryAspect(project)}
                     layoutId={project.media.type === "image" ? `img-${project.id}` : undefined}
                     onImageClick={
                       project.media.type === "image"
@@ -350,28 +352,36 @@ function ImageLightbox({
             aria-hidden
           />
 
-          {/* Shared-layout image — flies from card position */}
+          {/* Shared-layout image — container matches photo aspect ratio */}
           <AnimatePresence mode="popLayout">
-            <motion.div
-              key={item.id}
-              layoutId={`img-${item.id}`}
-              className="relative z-10 overflow-hidden rounded-xl shadow-2xl"
-              style={{ width: "min(88vw, 960px)", height: "min(78vh, 680px)" }}
-              transition={spring}
-            >
-              <Image
-                src={
-                  item.media.imageUrl.includes("images.unsplash.com")
-                    ? item.media.imageUrl.replace(/w=\d+/, "w=2400")
-                    : item.media.imageUrl
-                }
-                alt={item.title}
-                fill
-                className="object-cover"
-                sizes="88vw"
-                priority
-              />
-            </motion.div>
+            {(() => {
+              const { w, h } = getImageDimensions(item);
+              return (
+                <motion.div
+                  key={item.id}
+                  layoutId={`img-${item.id}`}
+                  className="relative z-10 overflow-hidden rounded-xl shadow-2xl"
+                  style={{
+                    aspectRatio: `${w} / ${h}`,
+                    width: `min(960px, 88vw, calc(78vh * ${w} / ${h}))`,
+                  }}
+                  transition={spring}
+                >
+                  <Image
+                    src={
+                      item.media.imageUrl.includes("images.unsplash.com")
+                        ? item.media.imageUrl.replace(/w=\d+/, "w=2400")
+                        : item.media.imageUrl
+                    }
+                    alt={item.title}
+                    fill
+                    className="object-contain object-center"
+                    sizes="88vw"
+                    priority
+                  />
+                </motion.div>
+              );
+            })()}
           </AnimatePresence>
 
           {/* Caption */}
@@ -383,7 +393,7 @@ function ImageLightbox({
             transition={{ delay: reduceMotion ? 0 : 0.28, duration: 0.3 }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/50">
-              {item.category}
+              {displayCategory(item.category)}
             </p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-medium text-white">
               {item.title}
@@ -487,7 +497,7 @@ function VideoModal({
             {/* Caption */}
             <div className="mt-4 text-center">
               <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/50">
-                {item.category} · {item.media.provider}
+                {displayCategory(item.category)} · {item.media.provider}
               </p>
               <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-medium text-white">
                 {item.title}

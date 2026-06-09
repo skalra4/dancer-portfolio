@@ -72,6 +72,8 @@ export const PORTFOLIO_QUERY = defineQuery(`
       mediaType == "social" => socialProvider
     ),
     "thumbnail": thumbnail.asset->url,
+    "imageWidth": image.asset->metadata.dimensions.width,
+    "imageHeight": image.asset->metadata.dimensions.height,
     colSpan
   }
 `);

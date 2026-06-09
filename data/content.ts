@@ -15,6 +15,7 @@
  */
 
 import raw from "./content.json";
+import { displayCategory } from "@/lib/displayCategory";
 
 /* ────────────────────────────────────────────────────────────────────────────
    Raw JSON schema types
@@ -35,6 +36,9 @@ export type RawPortfolioItem = {
   provider?: string;
   /** Optional thumbnail override (video only) */
   thumbnail?: string;
+  /** Image intrinsic dimensions (image type only) */
+  imageWidth?: number;
+  imageHeight?: number;
   /** 1 = standard, 2 = wide, 3 = full-width  (tile grid only) */
   colSpan?: number;
 };
@@ -65,6 +69,8 @@ export type RawResumeSection = {
 export type MediaImage = {
   type: "image";
   imageUrl: string;
+  width?: number;
+  height?: number;
 };
 
 export type MediaVideo = {
@@ -124,7 +130,9 @@ export function normalisePortfolioItem(r: RawPortfolioItem): PortfolioItem | nul
   let media: MediaSpec;
 
   if (r.type === "image") {
-    media = { type: "image", imageUrl: r.src };
+    const width = r.imageWidth && r.imageWidth > 0 ? r.imageWidth : undefined;
+    const height = r.imageHeight && r.imageHeight > 0 ? r.imageHeight : undefined;
+    media = { type: "image", imageUrl: r.src, width, height };
   } else if (r.type === "video") {
     media = {
       type: "video",
@@ -149,7 +157,7 @@ export function normalisePortfolioItem(r: RawPortfolioItem): PortfolioItem | nul
   return {
     id: r.id,
     title: r.title ?? "Untitled",
-    category: r.category ?? "Uncategorized",
+    category: displayCategory(r.category ?? "Uncategorized"),
     media,
     colSpan,
   };
