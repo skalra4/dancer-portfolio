@@ -6,19 +6,24 @@ import { FileText, Globe } from "lucide-react";
 type Tab = "web" | "document";
 
 export function ResumeViewToggle({
-  pdfPath,
+  pdfUrl,
   children,
 }: {
-  pdfPath: string;
+  pdfUrl: string | null;
   children: ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>("web");
+  const hasPdf = Boolean(pdfUrl);
+
+  if (!hasPdf) {
+    return <>{children}</>;
+  }
 
   return (
     <div>
       {/* Tab bar */}
       <div
-        className="mb-10 flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 p-1 w-fit dark:border-zinc-700 dark:bg-zinc-800"
+        className="mb-10 flex w-fit items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800"
         role="tablist"
         aria-label="Resume view"
       >
@@ -59,7 +64,7 @@ export function ResumeViewToggle({
         aria-labelledby="tab-document"
         hidden={tab !== "document"}
       >
-        <PdfViewer pdfPath={pdfPath} />
+        <PdfViewer pdfUrl={pdfUrl!} />
       </div>
     </div>
   );
@@ -100,22 +105,22 @@ function TabButton({
   );
 }
 
-function PdfViewer({ pdfPath }: { pdfPath: string }) {
+function PdfViewer({ pdfUrl }: { pdfUrl: string }) {
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      {/* Tall enough to show roughly two A4 pages without needing to scroll immediately */}
       <iframe
-        src={`${pdfPath}#toolbar=1&navpanes=0&scrollbar=1`}
+        src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1`}
         title="Resume PDF"
         className="h-[80vh] min-h-[640px] w-full"
         loading="lazy"
       />
-      {/* Fallback for browsers that block PDF iframes */}
       <p className="border-t border-zinc-200 px-5 py-3 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
         Can&apos;t view the PDF?{" "}
         <a
-          href={pdfPath}
+          href={pdfUrl}
           download
+          target="_blank"
+          rel="noopener noreferrer"
           className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
         >
           Download it directly.

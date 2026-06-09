@@ -123,14 +123,6 @@ export const siteSettingsType = defineType({
 
     // ── Documents ───────────────────────────────────────────────────────────
     defineField({
-      name: "resumePdf",
-      title: "Resume PDF",
-      type: "file",
-      options: { accept: ".pdf" },
-      description:
-        "Upload the latest resume PDF. This replaces the file used for the Download and Document View on the Resume page.",
-    }),
-    defineField({
       name: "writingSamplePdf",
       title: "Writing Sample PDF",
       type: "file",

@@ -12,7 +12,12 @@
 
 import { cache } from "react";
 import { getSanityClient } from "./client";
-import { PORTFOLIO_QUERY, RESUME_SECTIONS_QUERY, SITE_SETTINGS_QUERY } from "./queries";
+import {
+  PORTFOLIO_QUERY,
+  RESUME_DOCUMENT_QUERY,
+  RESUME_SECTIONS_QUERY,
+  SITE_SETTINGS_QUERY,
+} from "./queries";
 import {
   normalisePortfolioItem,
   normaliseResumeSection,
@@ -132,6 +137,30 @@ export async function fetchResumeHeader(): Promise<ResumeHeader> {
 }
 
 /**
+ * Fetch the resume PDF URL from the Resume PDF singleton in Sanity.
+ * Falls back to a legacy upload stored on Site Settings (pre-migration).
+ */
+export const fetchResumePdfUrl = cache(async (): Promise<string> => {
+  if (!isSanityReady()) return "";
+
+  try {
+    const doc = await getSanityClient().fetch<{ pdfUrl?: string | null } | null>(
+      RESUME_DOCUMENT_QUERY,
+    );
+    const fromDoc = doc?.pdfUrl?.trim() ?? "";
+    if (fromDoc) return fromDoc;
+
+    const settings = await getSanityClient().fetch<{ legacyResumePdfUrl?: string | null } | null>(
+      SITE_SETTINGS_QUERY,
+    );
+    return settings?.legacyResumePdfUrl?.trim() ?? "";
+  } catch (err) {
+    console.error("[Sanity] fetchResumePdfUrl failed:", err);
+    return "";
+  }
+});
+
+/**
  * Fetch all resume sections (Education, Performance, Awards, …) in sort order.
  *
  * Sections come from Sanity when configured, otherwise from content.json.
@@ -183,7 +212,6 @@ export type SiteSettings = {
     facebook?: string;
     linkedin?: string;
   };
-  resumePdfUrl: string;
   writingSamplePdfUrl: string;
   about: {
     image: CmsImage;
@@ -221,7 +249,6 @@ Based in New York, available for performance, rehearsal direction, and guest tea
     instagram: "https://instagram.com",
     youtube: "https://youtube.com",
   },
-  resumePdfUrl: "",
   writingSamplePdfUrl: "",
   about: {
     image: { url: "", alt: "", width: 0, height: 0 },
@@ -253,7 +280,7 @@ type RawSiteSettings = {
   socialTwitter?: string | null;
   socialFacebook?: string | null;
   socialLinkedin?: string | null;
-  resumePdfUrl?: string | null;
+  legacyResumePdfUrl?: string | null;
   writingSamplePdfUrl?: string | null;
   contactTitle?: string | null;
   contactDescription?: string | null;
@@ -294,7 +321,6 @@ function normaliseSiteSettings(raw: RawSiteSettings | null): SiteSettings {
       facebook: raw.socialFacebook?.trim() || undefined,
       linkedin: raw.socialLinkedin?.trim() || undefined,
     },
-    resumePdfUrl: raw.resumePdfUrl?.trim() || "",
     writingSamplePdfUrl: raw.writingSamplePdfUrl?.trim() || "",
     about: {
       image: {
