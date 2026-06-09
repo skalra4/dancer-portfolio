@@ -35,7 +35,7 @@ export const portfolioItemType = defineType({
           { title: "Dance", value: "Dance" },
           { title: "Choreography", value: "Choreography" },
           { title: "Teaching", value: "Teaching" },
-          { title: "Headshots", value: "Headshots" },
+          { title: "Visual Portfolio", value: "Visual Portfolio" },
         ],
         layout: "dropdown",
       },

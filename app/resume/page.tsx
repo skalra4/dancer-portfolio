@@ -5,7 +5,6 @@ import { NavbarWrapper } from "../components/NavbarWrapper";
 import { ResumeWebView } from "../components/ResumeWebView";
 import { ResumeViewToggle } from "../components/ResumeViewToggle";
 import { ScrollReveal } from "../components/ScrollReveal";
-import { siteConfig } from "@/config/siteConfig";
 import { fetchResumeHeader, fetchSiteSettings } from "@/sanity/lib/fetch";
 
 export const metadata: Metadata = {
@@ -32,11 +31,11 @@ function ContactLine({
 }
 
 export default async function ResumePage() {
-  const { resumePdfPath } = siteConfig;
-  const [{ headline, contact }, { siteName }] = await Promise.all([
+  const [{ headline, contact }, { siteName, resumePdfUrl }] = await Promise.all([
     fetchResumeHeader(),
     fetchSiteSettings(),
   ]);
+  const resumePdfPath = resumePdfUrl || "/resume.pdf";
 
   return (
     <>

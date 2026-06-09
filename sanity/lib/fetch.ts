@@ -183,6 +183,8 @@ export type SiteSettings = {
     facebook?: string;
     linkedin?: string;
   };
+  resumePdfUrl: string;
+  writingSamplePdfUrl: string;
   about: {
     image: CmsImage;
   };
@@ -219,6 +221,8 @@ Based in New York, available for performance, rehearsal direction, and guest tea
     instagram: "https://instagram.com",
     youtube: "https://youtube.com",
   },
+  resumePdfUrl: "",
+  writingSamplePdfUrl: "",
   about: {
     image: { url: "", alt: "", width: 0, height: 0 },
   },
@@ -249,6 +253,8 @@ type RawSiteSettings = {
   socialTwitter?: string | null;
   socialFacebook?: string | null;
   socialLinkedin?: string | null;
+  resumePdfUrl?: string | null;
+  writingSamplePdfUrl?: string | null;
   contactTitle?: string | null;
   contactDescription?: string | null;
   contactEmail?: string | null;
@@ -288,6 +294,8 @@ function normaliseSiteSettings(raw: RawSiteSettings | null): SiteSettings {
       facebook: raw.socialFacebook?.trim() || undefined,
       linkedin: raw.socialLinkedin?.trim() || undefined,
     },
+    resumePdfUrl: raw.resumePdfUrl?.trim() || "",
+    writingSamplePdfUrl: raw.writingSamplePdfUrl?.trim() || "",
     about: {
       image: {
         url: raw.aboutImageUrl?.trim() || "",

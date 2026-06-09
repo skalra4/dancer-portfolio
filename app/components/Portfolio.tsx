@@ -50,6 +50,15 @@ function getTileAspect(item: PortfolioItem): string {
   return "1/1";
 }
 
+/** Display-name overrides — maps stored category values to UI labels. */
+const CATEGORY_LABELS: Record<string, string> = {
+  Headshots: "Visual Portfolio",
+};
+
+function categoryLabel(key: string): string {
+  return CATEGORY_LABELS[key] ?? key;
+}
+
 // ── Portfolio component ──────────────────────────────────────────────────────
 
 /**
@@ -175,7 +184,7 @@ export function Portfolio({
                       : "border-zinc-300 bg-transparent text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  {key === "all" ? "All" : key}
+                  {key === "all" ? "All" : categoryLabel(key)}
                 </button>
               );
             })}

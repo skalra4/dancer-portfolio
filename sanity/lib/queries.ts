@@ -25,6 +25,8 @@ export const SITE_SETTINGS_QUERY = defineQuery(`
     socialTwitter,
     socialFacebook,
     socialLinkedin,
+    "resumePdfUrl": resumePdf.asset->url,
+    "writingSamplePdfUrl": writingSamplePdf.asset->url,
     contactTitle,
     contactDescription,
     contactEmail,
