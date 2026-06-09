@@ -5,6 +5,8 @@ import { useState } from "react";
 import { motion, useReducedMotion, type Transition } from "framer-motion";
 import { Camera, Music2, Play } from "lucide-react";
 import type { PortfolioItem } from "@/data/content";
+import { displayCategory } from "@/lib/displayCategory";
+import { useIsMounted } from "@/lib/useIsMounted";
 
 const SPRING: Transition = { type: "spring", bounce: 0.05, duration: 0.55 };
 const SPRING_INSTANT: Transition = { type: "spring", bounce: 0, duration: 0 };
@@ -56,7 +58,7 @@ function CardCaption({ item }: { item: PortfolioItem }) {
   return (
     <div className="mt-2 px-0.5">
       <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-        {item.category}
+        {displayCategory(item.category)}
       </span>
       <p className="mt-0.5 text-sm font-medium text-zinc-800 transition-colors group-hover:text-zinc-500 dark:text-zinc-200 dark:group-hover:text-zinc-400">
         {item.title}
@@ -99,9 +101,9 @@ function ImageCard({
       >
         <Image
           src={item.media.imageUrl}
-          alt={`${item.title} — ${item.category}`}
+          alt={`${item.title} — ${displayCategory(item.category)}`}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className="object-contain object-center transition-transform duration-500 group-hover:scale-[1.02]"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/12" />
@@ -194,6 +196,7 @@ function SocialCard({
   item: PortfolioItem;
   aspectRatio: string;
 }) {
+  const mounted = useIsMounted();
   const [loaded, setLoaded] = useState(false);
   if (item.media.type !== "social") return null;
 
@@ -225,17 +228,19 @@ function SocialCard({
           </span>
         </div>
 
-        <iframe
-          src={embedUrl}
-          title={item.title}
-          className={`h-full w-full border-0 transition-opacity duration-500 ${
-            loaded ? "opacity-100" : "opacity-0"
-          }`}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-        />
+        {mounted ? (
+          <iframe
+            src={embedUrl}
+            title={item.title}
+            className={`h-full w-full border-0 transition-opacity duration-500 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          />
+        ) : null}
       </div>
       <CardCaption item={item} />
     </div>

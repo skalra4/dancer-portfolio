@@ -4,7 +4,7 @@
       "title": "Portfolio",
       "description": "Selected performances, choreography, and teaching."
     },
-    "categories": ["Dance", "Choreography", "Teaching", "Headshots"],
+    "categories": ["Dance", "Choreography", "Teaching", "Visual Portfolio"],
     "items": [
       {
         "id": "sample-1",
@@ -33,7 +33,7 @@
         "id": "sample-4",
         "title": "Sample image — replace from Sanity Studio",
         "type": "image",
-        "category": "Headshots",
+        "category": "Visual Portfolio",
         "src": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1200&auto=format&fit=crop"
       }
     ]

@@ -25,6 +25,8 @@ export const SITE_SETTINGS_QUERY = defineQuery(`
     socialTwitter,
     socialFacebook,
     socialLinkedin,
+    "legacyResumePdfUrl": resumePdf.asset->url,
+    "writingSamplePdfUrl": writingSamplePdf.asset->url,
     contactTitle,
     contactDescription,
     contactEmail,
@@ -70,6 +72,8 @@ export const PORTFOLIO_QUERY = defineQuery(`
       mediaType == "social" => socialProvider
     ),
     "thumbnail": thumbnail.asset->url,
+    "imageWidth": image.asset->metadata.dimensions.width,
+    "imageHeight": image.asset->metadata.dimensions.height,
     colSpan
   }
 `);
@@ -81,6 +85,12 @@ export const PORTFOLIO_QUERY = defineQuery(`
  * Each item uses `_key` (Sanity's auto-generated array item key) as `id`
  * to satisfy the normaliser's `id` requirement.
  */
+export const RESUME_DOCUMENT_QUERY = defineQuery(`
+  *[_type == "resumeDocument" && _id == "resumeDocument"][0] {
+    "pdfUrl": pdf.asset->url
+  }
+`);
+
 export const RESUME_SECTIONS_QUERY = defineQuery(`
   *[_type == "resumeSection"] | order(sortOrder asc, _createdAt asc) {
     "id": _id,

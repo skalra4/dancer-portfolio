@@ -39,6 +39,15 @@ export default defineConfig({
               .schemaType("portfolioItem")
               .child(S.documentTypeList("portfolioItem").title("Portfolio Items")),
             S.listItem()
+              .title("Resume PDF")
+              .id("resumeDocument")
+              .child(
+                S.document()
+                  .schemaType("resumeDocument")
+                  .documentId("resumeDocument")
+                  .title("Resume PDF"),
+              ),
+            S.listItem()
               .title("Resume Sections")
               .schemaType("resumeSection")
               .child(

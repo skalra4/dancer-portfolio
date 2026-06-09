@@ -66,25 +66,37 @@ export default async function AboutPage() {
   const { siteName, siteTagline, bio, social, about } = await fetchSiteSettings();
   const hasSocial = Object.values(social).some(Boolean);
   const img = about.image;
-  const hasImage = img.url.length > 0 && img.width > 0 && img.height > 0;
+  const hasImage = img.url.length > 0;
+  const aspectW = img.width > 0 ? img.width : 3;
+  const aspectH = img.height > 0 ? img.height : 2;
 
   return (
     <>
       <NavbarWrapper />
       <main className="flex flex-1 flex-col bg-zinc-50 dark:bg-zinc-950">
 
-        {/* ── Optional header image ── */}
+        {/* ── Optional header image ──
+            Container matches the image aspect ratio so there are no letterbox bars.
+            Caps height at 70vh; for tall photos the width shrinks instead. */}
         {hasImage ? (
-          <div className="relative w-full h-[55vh] sm:h-[65vh] pt-16">
-            <Image
-              src={img.url}
-              alt={img.alt || siteName}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-center"
-            />
-          </div>
+          <figure className="mt-16 flex w-full justify-center">
+            <div
+              className="relative"
+              style={{
+                aspectRatio: `${aspectW} / ${aspectH}`,
+                width: `min(100%, calc(70vh * ${aspectW} / ${aspectH}))`,
+              }}
+            >
+              <Image
+                src={img.url}
+                alt={img.alt || siteName}
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover object-center"
+              />
+            </div>
+          </figure>
         ) : null}
 
         {/* ── Content ── */}

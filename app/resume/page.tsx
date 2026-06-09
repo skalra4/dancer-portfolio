@@ -5,8 +5,7 @@ import { NavbarWrapper } from "../components/NavbarWrapper";
 import { ResumeWebView } from "../components/ResumeWebView";
 import { ResumeViewToggle } from "../components/ResumeViewToggle";
 import { ScrollReveal } from "../components/ScrollReveal";
-import { siteConfig } from "@/config/siteConfig";
-import { fetchResumeHeader, fetchSiteSettings } from "@/sanity/lib/fetch";
+import { fetchResumeHeader, fetchResumePdfUrl, fetchSiteSettings } from "@/sanity/lib/fetch";
 
 export const metadata: Metadata = {
   title: "Resume",
@@ -32,11 +31,10 @@ function ContactLine({
 }
 
 export default async function ResumePage() {
-  const { resumePdfPath } = siteConfig;
-  const [{ headline, contact }, { siteName }] = await Promise.all([
-    fetchResumeHeader(),
-    fetchSiteSettings(),
-  ]);
+  const { headline, contact } = await fetchResumeHeader();
+  const { siteName } = await fetchSiteSettings();
+  const pdfUrl = await fetchResumePdfUrl();
+  const hasPdf = pdfUrl.length > 0;
 
   return (
     <>
@@ -74,17 +72,20 @@ export default async function ResumePage() {
                   <ContactLine contact={contact} />
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex shrink-0 items-center print:hidden">
-                  <a
-                    href={resumePdfPath}
-                    download
-                    className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                  >
-                    <Download className="size-4 shrink-0" aria-hidden />
-                    Download Full Resume
-                  </a>
-                </div>
+                {hasPdf ? (
+                  <div className="flex shrink-0 items-center print:hidden">
+                    <a
+                      href={pdfUrl}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    >
+                      <Download className="size-4 shrink-0" aria-hidden />
+                      Download Full Resume
+                    </a>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-8 border-b border-zinc-200 dark:border-zinc-800 print:border-zinc-300" />
@@ -94,7 +95,7 @@ export default async function ResumePage() {
           {/* ── Tab toggle (print: always show web view) ── */}
           <ScrollReveal delay={0.07} className="print:block">
             <div className="print:hidden">
-              <ResumeViewToggle pdfPath={resumePdfPath}>
+              <ResumeViewToggle pdfUrl={hasPdf ? pdfUrl : null}>
                 <ResumeWebView />
               </ResumeViewToggle>
             </div>

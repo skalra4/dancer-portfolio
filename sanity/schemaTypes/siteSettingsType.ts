@@ -121,6 +121,16 @@ export const siteSettingsType = defineType({
       type: "url",
     }),
 
+    // ── Documents ───────────────────────────────────────────────────────────
+    defineField({
+      name: "writingSamplePdf",
+      title: "Writing Sample PDF",
+      type: "file",
+      options: { accept: ".pdf" },
+      description:
+        "Upload a writing sample PDF. When set, it will be embedded and downloadable on the Writing page.",
+    }),
+
     // ── About page image ────────────────────────────────────────────────────
     defineField({
       name: "aboutImage",
