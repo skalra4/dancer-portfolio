@@ -10,6 +10,7 @@ import {
   type PortfolioItem,
 } from "@/data/content";
 import { displayCategory } from "@/lib/displayCategory";
+import { useIsMounted } from "@/lib/useIsMounted";
 import { MediaCard } from "./MediaCard";
 import { ScrollReveal } from "./ScrollReveal";
 
@@ -61,6 +62,11 @@ function getImageDimensions(item: ImageItem): { w: number; h: number } {
   return { w: 4, h: 3 };
 }
 
+/** layoutId triggers Framer Motion DOM reads — only enable after client hydration. */
+function imageLayoutId(mounted: boolean, id: string): string | undefined {
+  return mounted ? `img-${id}` : undefined;
+}
+
 // ── Portfolio component ──────────────────────────────────────────────────────
 
 /**
@@ -81,6 +87,7 @@ export function Portfolio({
   categories,
   section,
 }: PortfolioProps) {
+  const mounted = useIsMounted();
   const reduceMotion = useReducedMotion();
 
   const allFilters = useMemo(() => ["all", ...categories], [categories]);
@@ -231,7 +238,11 @@ export function Portfolio({
                   <MediaCard
                     item={project}
                     aspectRatio={getMasonryAspect(project)}
-                    layoutId={project.media.type === "image" ? `img-${project.id}` : undefined}
+                    layoutId={
+                      project.media.type === "image"
+                        ? imageLayoutId(mounted, project.id)
+                        : undefined
+                    }
                     onImageClick={
                       project.media.type === "image"
                         ? () => setLightboxItem(project as ImageItem)
@@ -270,7 +281,11 @@ export function Portfolio({
                     <MediaCard
                       item={project}
                       aspectRatio={getTileAspect(project)}
-                      layoutId={project.media.type === "image" ? `img-${project.id}` : undefined}
+                      layoutId={
+                        project.media.type === "image"
+                          ? imageLayoutId(mounted, project.id)
+                          : undefined
+                      }
                       onImageClick={
                         project.media.type === "image"
                           ? () => setLightboxItem(project as ImageItem)
@@ -298,6 +313,7 @@ export function Portfolio({
 
       {/* ── Image lightbox ── */}
       <ImageLightbox
+        mounted={mounted}
         item={lightboxItem}
         index={lightboxIndex}
         total={imageItems.length}
@@ -318,6 +334,7 @@ export function Portfolio({
    in the grid to the full-screen image here via Framer Motion.
 ───────────────────────────────────────────────────────────── */
 function ImageLightbox({
+  mounted,
   item,
   index,
   total,
@@ -325,6 +342,7 @@ function ImageLightbox({
   onPrev,
   onNext,
 }: {
+  mounted: boolean;
   item: ImageItem | null;
   index: number;
   total: number;
@@ -359,7 +377,7 @@ function ImageLightbox({
               return (
                 <motion.div
                   key={item.id}
-                  layoutId={`img-${item.id}`}
+                  layoutId={imageLayoutId(mounted, item.id)}
                   className="relative z-10 overflow-hidden rounded-xl shadow-2xl"
                   style={{
                     aspectRatio: `${w} / ${h}`,

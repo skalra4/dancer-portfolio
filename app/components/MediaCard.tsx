@@ -6,6 +6,7 @@ import { motion, useReducedMotion, type Transition } from "framer-motion";
 import { Camera, Music2, Play } from "lucide-react";
 import type { PortfolioItem } from "@/data/content";
 import { displayCategory } from "@/lib/displayCategory";
+import { useIsMounted } from "@/lib/useIsMounted";
 
 const SPRING: Transition = { type: "spring", bounce: 0.05, duration: 0.55 };
 const SPRING_INSTANT: Transition = { type: "spring", bounce: 0, duration: 0 };
@@ -195,6 +196,7 @@ function SocialCard({
   item: PortfolioItem;
   aspectRatio: string;
 }) {
+  const mounted = useIsMounted();
   const [loaded, setLoaded] = useState(false);
   if (item.media.type !== "social") return null;
 
@@ -226,17 +228,19 @@ function SocialCard({
           </span>
         </div>
 
-        <iframe
-          src={embedUrl}
-          title={item.title}
-          className={`h-full w-full border-0 transition-opacity duration-500 ${
-            loaded ? "opacity-100" : "opacity-0"
-          }`}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-        />
+        {mounted ? (
+          <iframe
+            src={embedUrl}
+            title={item.title}
+            className={`h-full w-full border-0 transition-opacity duration-500 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          />
+        ) : null}
       </div>
       <CardCaption item={item} />
     </div>
